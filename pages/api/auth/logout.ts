@@ -12,7 +12,7 @@ export default async function handler(
 			.status(401)
 			.json({ message: 'You are already not logged in...' });
 	} else {
-		const serialised = serialize('ProfileJWT', null, {
+		const serialised = serialize('ProfileJWT', '', {
 			httpOnly: true,
 			secure: process.env.NODE_ENV !== 'development',
 			sameSite: 'strict',

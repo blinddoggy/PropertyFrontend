@@ -6,6 +6,12 @@ import { useLocalStorage } from '@/hooks/useLocalStorage';
 import AuthInput from '@/components/AuthInput';
 import Button from '@/components/Button';
 
+declare global {
+	interface Window {
+		ethereum: any;
+	}
+}
+
 const Login = () => {
 	const router = useRouter();
 

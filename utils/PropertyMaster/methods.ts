@@ -3,7 +3,7 @@ import PropertyToken from '@/utils/PropertyMaster/PropertyMaster.json';
 
 import { ProjectFromPropertyMaster as ProjectFromPropertyMaster } from '@/interfaces/interfaces';
 
-declare var window: any;
+// declare var window: any;
 
 /**
  * This function returns the Ethereum instance from the window object if it exists, otherwise it throws

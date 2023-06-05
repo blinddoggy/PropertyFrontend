@@ -10,9 +10,12 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 		return res.status(401).json({ error: 'Not logged in' });
 	}
 	try {
-		jwt.verify(ProfileJWT, secret);
-		return res.status(200).json({ JWT });
+		if (secret) {
+			jwt.verify(ProfileJWT, secret);
+			return res.status(200).json({ JWT });
+		}
+		throw 'Enviroment data not found.';
 	} catch (error) {
-		return res.status(400).json({ error: 'Request error' });
+		return res.status(400).json({ error: 'Request error:' + error });
 	}
 }

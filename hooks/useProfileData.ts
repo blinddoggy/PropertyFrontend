@@ -10,7 +10,7 @@ function useProfileData() {
 
 	useEffect(() => {
 		const fetchProfileData = async () => {
-			let user = null;
+			let user: User | null = null;
 			try {
 				const response = await fetch('/api/profile');
 				if (response.ok) {

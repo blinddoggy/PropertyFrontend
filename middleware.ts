@@ -4,14 +4,15 @@ import { jwtVerify } from 'jose';
 export async function middleware(request: any) {
 	const jwt = request.cookies.get('ProfileJWT');
 	const url = request.nextUrl.pathname;
-	if (url.startsWith('/projects') && !jwt) {
+	const secret = new TextEncoder().encode(process.env.SECRET);
+	if (!secret) NextResponse.redirect(new URL('/notfound.env', request.url));
+
+	if (!url.startsWith('/login') && !jwt) {
 		return NextResponse.redirect(new URL('/login', request.url));
 	}
 
-	const secret = new TextEncoder().encode(process.env.SECRET);
-
 	if (request.nextUrl.pathname.startsWith('/login')) {
-		if (jwt) {
+		if (jwt && secret) {
 			try {
 				await jwtVerify(jwt.value, secret);
 				return NextResponse.redirect(new URL('/projects', request.url));
@@ -24,11 +25,14 @@ export async function middleware(request: any) {
 
 	if (request.nextUrl.pathname.startsWith('/projects')) {
 		try {
-			await jwtVerify(jwt.value, secret);
-			return NextResponse.next();
+			if (jwt && secret) {
+				await jwtVerify(jwt.value, secret);
+				return NextResponse.next();
+			}
 		} catch (error) {
 			return NextResponse.redirect(new URL('/login', request.url));
 		}
+		return NextResponse.redirect(new URL('/login', request.url));
 	}
 }
 

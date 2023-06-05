@@ -13,6 +13,10 @@ export default async function loginHandler(
 		res.status(405).send({ message: 'Only POST requests allowed' });
 		return;
 	}
+	if (!secret) {
+		res.status(400).send({ message: 'Enviroment data not found.' });
+		return;
+	}
 
 	const { username, password } = JSON.parse(req.body);
 	const { status, message } = validateUser(username, password);

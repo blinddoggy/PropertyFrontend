@@ -13,3 +13,8 @@ export interface ProjectFormPinata {
 	image: string;
 	metadata: { [key: string]: any };
 }
+
+export interface User {
+	username: string;
+	name: string;
+}

@@ -66,7 +66,7 @@ const NewProject: React.FC<NewProjectProps> = ({ contractAddress }) => {
 				eventHandler
 			);
 		};
-	}, [contractAddress]);
+	}, [contractAddress, router]);
 
 	interface KeyValues {
 		name: string;
