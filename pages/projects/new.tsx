@@ -107,7 +107,6 @@ const NewProject: React.FC<NewProjectProps> = ({ contractAddress }) => {
 			console.error(error);
 			return;
 		}
-		// TODO: Subscribirse al event (new property)
 
 		const generatePinataMetadata = () => {
 			const keyvalues: { [key: string]: string } = {};
@@ -257,15 +256,6 @@ const NewProject: React.FC<NewProjectProps> = ({ contractAddress }) => {
 							</p>
 						))}
 					</div>
-
-					{/* TODO: agregar visualización del resultado del evento */}
-
-					<Button
-						fullWidth
-						large
-						outline
-						onClick={() => router.replace('/projects')}
-						label={'Continuar'}></Button>
 				</div>
 			</Layout>
 		);

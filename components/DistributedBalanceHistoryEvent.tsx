@@ -1,9 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
-// import ProjectCardSlider from './ProjectCardSlider';
-// import { useRouter } from 'next/router';
-
-import { ethers } from 'ethers';
 
 import {
 	getEventHistory,
@@ -15,7 +11,6 @@ import {
 interface ProjectHistoryEventProps {
 	contractAddress: string;
 	filterByIpfsHash?: string;
-	// project: ProjectFormPinata;
 }
 
 interface DistributedBalanceEvent {
@@ -50,7 +45,6 @@ const distributedBalanceToDTO = (
 		name: distributedBalanceEvent.name,
 		srcImage: distributedBalanceEvent.srcImage,
 	};
-	console.log(DTO);
 	return DTO;
 };
 
@@ -95,11 +89,7 @@ const DistributedBalanceHistoryEvent: React.FC<ProjectHistoryEventProps> = ({
 							<div className="flex gap-2">
 								<div className="bg-gray-400 rounded-full w-12 h-12 overflow-hidden shadow-md">
 									<Image
-										// TODO: modificar cuando se solucione el srcImage desde el contrato.
-										src={property.srcImage.substring(
-											0,
-											property.srcImage.length / 2
-										)}
+										src={property.srcImage}
 										alt={property.ipfsHash}
 										className="w-12 h-12 object-fill"
 										width={500}

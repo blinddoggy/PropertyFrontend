@@ -63,11 +63,7 @@ const Home: React.FC<HomeProps> = ({ contractAddress }) => {
 								<div className="flex items-center ">
 									<div className="bg-gray-400 rounded-full w-12 h-12 overflow-hidden shadow-md">
 										<Image
-											// TODO: modificar cuando se solucione el srcImage desde el contrato.
-											src={property.srcImage.substring(
-												0,
-												property.srcImage.length / 2
-											)}
+											src={property.srcImage}
 											alt={property.ipfsHash.hash}
 											className="w-12 h-12 object-cover"
 											width={50}
