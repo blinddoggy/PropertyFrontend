@@ -8,33 +8,33 @@ export async function middleware(request: any) {
 
 	if (!secret) return NextResponse.redirect(new URL('/notfound.env', url));
 
-	if (!url.startsWith('/login') && !jwt) {
-		return NextResponse.redirect(new URL('/login', url));
+	if (!jwt) {
+		if (url !== '/login') {
+			return NextResponse.redirect(new URL('/login', url));
+		} else {
+			return NextResponse.next();
+		}
 	}
 
 	if (url.startsWith('/login')) {
-		if (jwt && secret) {
-			try {
-				await jwtVerify(jwt.value, secret);
-				return NextResponse.redirect(new URL('/projects', url));
-			} catch (error) {
-				return NextResponse.next();
-			}
+		try {
+			await jwtVerify(jwt.value, secret);
+			return NextResponse.redirect(new URL('/projects', url));
+		} catch (error) {
+			return NextResponse.next();
 		}
-		return NextResponse.next();
 	}
 
 	if (url.startsWith('/projects')) {
 		try {
-			if (jwt && secret) {
-				await jwtVerify(jwt.value, secret);
-				return NextResponse.next();
-			}
+			await jwtVerify(jwt.value, secret);
+			return NextResponse.next();
 		} catch (error) {
 			return NextResponse.redirect(new URL('/login', url));
 		}
-		return NextResponse.redirect(new URL('/login', url));
 	}
+
+	return NextResponse.next();
 }
 
 export const config = {
