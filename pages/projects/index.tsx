@@ -5,6 +5,7 @@ import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useEffect } from 'react';
 
 interface ProjectsProps {
+	contractAddress;
 	projects: React.FC<ProjectFormPinata>[];
 }
 interface ProjectFormPinata {
@@ -14,14 +15,14 @@ interface ProjectFormPinata {
 	metadata: { [key: string]: any };
 }
 
-const Projects: React.FC<ProjectsProps> = ({ projects }) => {
+const Projects: React.FC<ProjectsProps> = ({ contractAddress, projects }) => {
 	const [storedProject, setStoredProject] = useLocalStorage('projects', null);
 	useEffect(() => {
 		setStoredProject(projects);
 	}, [projects, setStoredProject]);
 
 	return (
-		<Layout>
+		<Layout contractAddress={contractAddress}>
 			<Header label="Proyectos" />
 			<div className="grid md:grid-cols-2 lg:grid-cols-3 px-4 gap-4">
 				{projects.map((project: any) => (
@@ -37,6 +38,7 @@ export default Projects;
 export async function getServerSideProps() {
 	const apiUrl = 'https://api.pinata.cloud/data/pinList?includeCount=false';
 	const Authorization = process.env.PINATA_API_BEARER_JWT || '';
+	const contractAddress = (process.env.MASTER_PROPERTY_TOKEN as string) || '';
 
 	try {
 		const response = await fetch(apiUrl, { headers: { Authorization } });
@@ -51,6 +53,7 @@ export async function getServerSideProps() {
 
 		return {
 			props: {
+				contractAddress,
 				projects,
 			},
 		};

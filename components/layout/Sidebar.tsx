@@ -88,11 +88,11 @@ const Sidebar = () => {
 					))}
 				</div>
 				<div className="mb-14 mt-auto">
-					<SidebarItem
+					{/* <SidebarItem
 						onClick={() => logout()}
 						icon={BiLogOut}
 						label="LogOut"
-					/>
+					/> */}
 				</div>
 			</div>
 		</div>

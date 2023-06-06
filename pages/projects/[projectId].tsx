@@ -112,7 +112,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ contractAddress }) => {
 	}
 
 	return (
-		<Layout>
+		<Layout contractAddress={contractAddress}>
 			<Header showBackArrow label={project.name || 'No name'} />
 			<div className="px-4">
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-4">

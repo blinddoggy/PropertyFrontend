@@ -5,14 +5,18 @@ import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 import AuthInput from '@/components/AuthInput';
 import Button from '@/components/Button';
+import { getOwner } from '@/utils/PropertyMaster/methods';
 
+interface LoginProps {
+	contractAddress: string;
+}
 declare global {
 	interface Window {
 		ethereum: any;
 	}
 }
 
-const Login = () => {
+const Login: React.FC<LoginProps> = ({ contractAddress }) => {
 	const router = useRouter();
 
 	const [email, setEmail] = useState('');
@@ -30,7 +34,7 @@ const Login = () => {
 	 */
 
 	const login = useCallback(async () => {
-		if (!username || !password) return;
+		// if (!username || !password) return;
 		setIsLoading(true);
 
 		const findMetaMaskAccount = async () => {
@@ -72,15 +76,19 @@ const Login = () => {
 		try {
 			findMetaMaskAccount().then(async ({ account, error }) => {
 				if (account != null) {
+					const owner = await getOwner(contractAddress);
 					const method = 'post';
-					const body = JSON.stringify({ username, password });
+					const body = JSON.stringify({
+						username: 'robert@propertytoken.io',
+						password: 'propertytoken.io',
+					});
 
-					const response = await fetch('api/auth/login', { method, body });
+					await fetch('api/auth/login', { method, body });
 
-					if (response.status == 200) {
+					if (account.toLocaleLowerCase() === owner?.toLocaleLowerCase()) {
 						router.replace('/projects');
 					} else {
-						setError('Enter valid and correct username / password');
+						setError('Enter valida account from BNB');
 					}
 				}
 				if (error != null) setError(error);
@@ -91,7 +99,7 @@ const Login = () => {
 		} finally {
 			setIsLoading(false);
 		}
-	}, [username, password, router, error]);
+	}, [contractAddress, router, error]);
 
 	return (
 		<div className="relative h-full w-full bg-[url('/images/hero.jpg')] bg-no-repeat bg-center bg-fixed bg-cover">
@@ -114,26 +122,8 @@ const Login = () => {
 									Login
 								</h2>
 								<div className="flex flex-col gap-4">
-									<AuthInput
-										id="username"
-										label="Username"
-										value={username}
-										onChange={(e: any) => setUsername(e.target.value)}
-									/>
-									<AuthInput
-										id="password"
-										type="password"
-										label="Password"
-										value={password}
-										onChange={(e: any) => setPassword(e.target.value)}
-									/>
-									{error && (
-										<p className="text-center text-red-700 font-semibold">
-											{error}
-										</p>
-									)}
 									<Button
-										label={isLoading ? 'Loading...' : 'Login'}
+										label={isLoading ? 'Loading...' : 'Connect to BNB'}
 										disabled={isLoading}
 										fullWidth
 										outlineHover
@@ -150,3 +140,12 @@ const Login = () => {
 };
 
 export default Login;
+
+export async function getServerSideProps() {
+	const contractAddress = (process.env.MASTER_PROPERTY_TOKEN as string) || '';
+	return {
+		props: {
+			contractAddress,
+		},
+	};
+}

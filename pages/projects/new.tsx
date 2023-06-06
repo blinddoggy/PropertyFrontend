@@ -241,12 +241,12 @@ const NewProject: React.FC<NewProjectProps> = ({ contractAddress }) => {
 		</div>
 	);
 
-	if (!currentAccount || isLoading)
+	if (!currentAccount || isLoading || !contractAddress)
 		return <Loading loadingMessage={loadingMessage} />;
 
 	if (logProgressSaving.length > 0) {
 		return (
-			<Layout>
+			<Layout contractAddress={contractAddress}>
 				<Header showBackArrow label="Crear Nuevo Proyecto" />
 
 				<div className="p-4 h-auto border-0 rounded-lg shadow-lg overflow-hidden flex flex-col bg-black m-2 outline-none focus:outline-none ">
@@ -272,7 +272,7 @@ const NewProject: React.FC<NewProjectProps> = ({ contractAddress }) => {
 	}
 
 	return (
-		<Layout>
+		<Layout contractAddress={contractAddress}>
 			<Header showBackArrow label="Crear Nuevo Proyecto" />
 
 			<div className=" h-auto border-0 rounded-lg shadow-lg overflow-hidden flex flex-col bg-black m-2 outline-none focus:outline-none ">

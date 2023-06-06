@@ -62,6 +62,44 @@ export const createContract = async (contractAddress: string) => {
 };
 
 /**
+ * This TypeScript function retrieves the owner of a smart contract given its address.
+ * @param {string} contractAddress - A string representing the address of a smart contract on the
+ * blockchain.
+ * @returns The function `getOwner` returns a Promise that resolves to a string representing the owner
+ * of a smart contract deployed at the specified `contractAddress`. If an error occurs during the
+ * execution of the function, it will be caught and logged to the console.
+ */
+export const getOwner = async (contractAddress: string) => {
+	try {
+		const { contract } = await createContract(contractAddress);
+		if (contract) {
+			const owner = await contract.owner();
+			return owner as string;
+		}
+	} catch (error) {
+		console.log(error);
+	}
+};
+
+/**
+ * This TypeScript function validates if the current wallet account is the owner of a given contract
+ * address.
+ * @param {string} contractAddress - a string representing the address of a smart contract on the
+ * blockchain.
+ * @returns a boolean value indicating whether the current connected wallet account is the owner of the
+ * smart contract with the given contract address.
+ */
+export const validateOwner = async (contractAddress: string) => {
+	try {
+		const account = await connectWallet();
+		const owner = await getOwner(contractAddress);
+		return owner?.toLowerCase() === account.toLowerCase();
+	} catch (error) {
+		console.log(error);
+	}
+};
+
+/**
  * This TypeScript function retrieves a project from a smart contract using its IPFS hash.
  * @param {string} contractAddress - A string representing the address of a smart contract on the
  * blockchain.

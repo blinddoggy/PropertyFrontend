@@ -95,6 +95,7 @@ const DistributedBalanceHistoryEvent: React.FC<ProjectHistoryEventProps> = ({
 							<div className="flex gap-2">
 								<div className="bg-gray-400 rounded-full w-12 h-12 overflow-hidden shadow-md">
 									<Image
+										// TODO: modificar cuando se solucione el srcImage desde el contrato.
 										src={property.srcImage.substring(
 											0,
 											property.srcImage.length / 2
