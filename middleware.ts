@@ -4,9 +4,7 @@ import { jwtVerify } from 'jose';
 export async function middleware(request: any) {
 	const jwt = request.cookies?.get('ProfileJWT');
 	const url = request.url;
-	const secret = new TextEncoder().encode(process.env.SECRET);
-
-	if (!secret) return NextResponse.redirect(new URL('/notfound.env', url));
+	const secret = new TextEncoder().encode(process.env.SECRET) || '';
 
 	if (!jwt) {
 		if (url !== '/login') {
