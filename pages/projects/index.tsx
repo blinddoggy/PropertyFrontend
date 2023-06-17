@@ -6,13 +6,7 @@ import { useEffect } from 'react';
 
 interface ProjectsProps {
 	contractAddress;
-	projects: React.FC<ProjectFormPinata>[];
-}
-interface ProjectFormPinata {
-	id: string;
-	name: string;
-	image: string;
-	metadata: { [key: string]: any };
+	projects: React.FC<MarketplaceMetadataFormat>[];
 }
 
 const Projects: React.FC<ProjectsProps> = ({ contractAddress, projects }) => {
@@ -44,12 +38,25 @@ export async function getServerSideProps() {
 		const response = await fetch(apiUrl, { headers: { Authorization } });
 		const data = await response.json();
 
-		const projects: ProjectFormPinata[] = data.rows.map((row: any) => ({
-			id: row.ipfs_pin_hash,
-			name: row.metadata.name,
-			image: `https://ipfs.io/ipfs/${row.ipfs_pin_hash}`,
-			metadata: row.metadata.keyvalues,
-		}));
+		const jsonHashes = data.rows
+			.filter((row) => row.metadata.name.endsWith('.json'))
+			.map((row: any) => ({
+				jsonHash: row.ipfs_pin_hash,
+			}));
+
+		const baseUrl = 'https://ipfs.io/ipfs';
+
+		const fetchPromises = jsonHashes.map(async (hash) => {
+			const url = `${baseUrl}/${hash.jsonHash}`;
+			const response = await fetch(url);
+			const data = await response.json();
+			return {
+				id: hash.jsonHash,
+				...data,
+			};
+		});
+
+		const projects = await Promise.all(fetchPromises);
 
 		return {
 			props: {
@@ -65,4 +72,15 @@ export async function getServerSideProps() {
 			},
 		};
 	}
+}
+
+interface MarketplaceMetadataFormat {
+	id?: string;
+	name: string;
+	description: string;
+	image: string;
+	attributes: {
+		trait_type: string;
+		value: string;
+	}[];
 }
