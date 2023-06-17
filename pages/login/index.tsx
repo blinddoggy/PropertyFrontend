@@ -5,7 +5,7 @@ import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 import AuthInput from '@/components/AuthInput';
 import Button from '@/components/Button';
-import { getOwner } from '@/utils/PropertyMaster/methods';
+import { getOwner, validateChainId } from '@/utils/PropertyMaster/methods';
 
 interface LoginProps {
 	contractAddress: string;
@@ -49,15 +49,22 @@ const Login: React.FC<LoginProps> = ({ contractAddress }) => {
 					return { account: null, error: 'Make sure you have Metamask!' };
 				}
 
-				console.log('We have the Ethereum object', ethereum);
-				// window.ethereum.request({method:'eth_requestAccounts'}).then(console.log)
+				if (!(await validateChainId())) {
+					console.error(
+						'Make sure you are on the main Binance Smart Chain network!'
+					);
+					return {
+						account: null,
+						error: 'Make sure you are on the main Binance Smart Chain network!',
+					};
+				}
+
 				const accounts = await ethereum.request({
 					method: 'eth_requestAccounts',
 				});
 
 				if (accounts.length !== 0) {
 					const account: String = accounts[0];
-					console.log('Found an authorized account:', account);
 					return { account, error: null };
 				} else {
 					console.error('No authorized account found');
@@ -110,6 +117,7 @@ const Login: React.FC<LoginProps> = ({ contractAddress }) => {
 							<Image
 								className="object-contain mx-auto md:ml-auto md:mr-0"
 								src="/images/logo_h_dorado.png"
+								priority
 								alt="Property Token Logo"
 								width={400}
 								height={50}
@@ -122,6 +130,7 @@ const Login: React.FC<LoginProps> = ({ contractAddress }) => {
 									Login
 								</h2>
 								<div className="flex flex-col gap-4">
+									{error && <p className="text-red-600">{error}</p>}
 									<Button
 										label={isLoading ? 'Loading...' : 'Connect to BNB'}
 										disabled={isLoading}
