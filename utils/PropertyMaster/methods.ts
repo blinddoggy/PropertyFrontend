@@ -3,7 +3,8 @@ import PropertyToken from '@/utils/PropertyMaster/PropertyMaster.json';
 
 import { ProjectFromPropertyMaster as ProjectFromPropertyMaster } from '@/interfaces/interfaces';
 
-// declare var window: any;
+let contract: ethers.Contract;
+let ethereum;
 
 /**
  * This function returns the Ethereum instance from the window object if it exists, otherwise it throws
@@ -12,9 +13,11 @@ import { ProjectFromPropertyMaster as ProjectFromPropertyMaster } from '@/interf
  * from the window object. If the `ethereum` object doesn't exist, it throws an error message.
  */
 export const getEthereumInstance = async () => {
-	const { ethereum } = window;
 	if (!ethereum) {
-		throw "Ethereum object doesn't exist!";
+		ethereum = window.ethereum;
+		if (!ethereum) {
+			throw "Ethereum object doesn't exist!";
+		}
 	}
 
 	return ethereum;
@@ -28,9 +31,7 @@ export const getEthereumInstance = async () => {
 export const connectWallet = async () => {
 	try {
 		const ethereum = await getEthereumInstance();
-		const accounts = await ethereum.request({
-			method: 'eth_requestAccounts',
-		});
+		const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
 		return accounts[0];
 	} catch (error) {
 		console.error(error);
@@ -53,11 +54,9 @@ export const createContract = async (contractAddress: string) => {
 	const provider = new ethers.providers.Web3Provider(ethereum);
 	const signer = provider.getSigner();
 
-	const contract = new ethers.Contract(
-		contractAddress,
-		PropertyToken.abi,
-		signer
-	);
+	if (!contract) {
+		contract = new ethers.Contract(contractAddress, PropertyToken.abi, signer);
+	}
 	return { contract, provider };
 };
 
@@ -77,7 +76,7 @@ export const getOwner = async (contractAddress: string) => {
 			return owner as string;
 		}
 	} catch (error) {
-		console.log(error);
+		console.error(error);
 	}
 };
 
@@ -95,7 +94,8 @@ export const validateOwner = async (contractAddress: string) => {
 		const owner = await getOwner(contractAddress);
 		return owner?.toLowerCase() === account.toLowerCase();
 	} catch (error) {
-		console.log(error);
+		console.error(error);
+		return false;
 	}
 };
 
@@ -123,7 +123,7 @@ export const getPropertyProject = async (
 			return property;
 		}
 	} catch (error) {
-		console.log(error);
+		console.error(error);
 	}
 };
 
@@ -166,7 +166,7 @@ export const createNewProperty = async (
 			return propertyAddress;
 		}
 	} catch (error) {
-		console.log(error);
+		console.error(error);
 	}
 };
 
@@ -189,7 +189,7 @@ export const distributeBalance = async (
 			return status;
 		}
 	} catch (error) {
-		console.log(error);
+		console.error(error);
 	}
 };
 
@@ -217,7 +217,7 @@ export const transferNFT = async (
 			return status;
 		}
 	} catch (error) {
-		console.log(error);
+		console.error(error);
 	}
 };
 
@@ -252,7 +252,7 @@ export const subscribeToContractEvent = async (
 			contract.on(contractEventName, eventHandler);
 		}
 	} catch (error) {
-		console.log(error);
+		console.error(error);
 	}
 };
 
@@ -278,7 +278,7 @@ export const unsubscribeToContractEvent = async (
 			contract.off(contractEventName, eventHandler);
 		}
 	} catch (error) {
-		console.log(error);
+		console.error(error);
 	}
 };
 
@@ -306,15 +306,16 @@ export const getEventHistory = async (
 				? contract.filters[contractEventName](filter)
 				: contract.filters[contractEventName]();
 			const latestBlockNumber = await provider.getBlockNumber();
+			const startBlockNumber = latestBlockNumber - 1;
 			const events = await contract.queryFilter(
 				eventFilter,
-				0,
+				startBlockNumber,
 				latestBlockNumber
 			);
 			return events;
 		}
 	} catch (error) {
-		console.log(error);
+		console.error(error);
 	}
 };
 
@@ -370,4 +371,37 @@ export const abbreviateNftAddress = (address: string) => {
 	return `${address.substring(0, 10)}...${address.substring(
 		address.length - 5
 	)}`;
+};
+
+/**
+ * This function validates if the current chain ID of an Ethereum instance matches the Binance Smart
+ * Chain network.
+ * @returns a boolean value indicating whether the current chain ID of the connected Ethereum instance
+ * matches the Binance Smart Chain network ID (0x38).
+ */
+export const validateChainId = async () => {
+	const bnbNetHex = 0x38;
+	const ethereum = await getEthereumInstance();
+	const chainId = await ethereum.request({ method: 'eth_chainId' });
+	return chainId == bnbNetHex;
+};
+
+/**
+ * This function subscribes or unsubscribes to the 'chainChanged' event and calls a callback function
+ * when the event is triggered.
+ * @param {boolean} subscribe - A boolean value indicating whether to subscribe or unsubscribe to the
+ * 'chainChanged' event.
+ * @param handleChainChanged - a function that takes an event object as its parameter and performs some
+ * action when the chainChanged event is triggered.
+ */
+export const subscribeToChainChanged = async (
+	subscribe: boolean,
+	handleChainChanged: (event: any) => void
+) => {
+	const ethereum = await getEthereumInstance();
+	if (subscribe) {
+		ethereum.on('chainChanged', handleChainChanged);
+	} else {
+		ethereum.removeListener('chainChanged', handleChainChanged);
+	}
 };

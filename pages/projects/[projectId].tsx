@@ -20,59 +20,68 @@ import DistributedBalanceHistoryEvent from '@/components/DistributedBalanceHisto
 
 interface ProjectDetailProps {
 	contractAddress: string;
+	metadata: MarketplaceMetadataFormat;
 }
 
-const ProjectDetail: React.FC<ProjectDetailProps> = ({ contractAddress }) => {
+const ProjectDetail: React.FC<ProjectDetailProps> = ({
+	contractAddress,
+	metadata,
+}) => {
 	const router = useRouter();
 	const [storedProject] = useLocalStorage('projects', {});
-	const [metadata, setMetadata] = useState<ProjectFormPinata>();
+	// const [metadata, setMetadata] = useState<ProjectFormPinata>();
 	const [project, setProject] = useState<ProjectFromPropertyMaster>();
 	const [currentAccount, setCurrentAccount] = useState('');
 	const [sendToAddress, setSendToAddress] = useState('');
+	// const [metadataHash, setMetadataHash] = useState(router.query.projectId);
 
 	const [statusDistribute, setStatusDistribute] = useState<boolean | null>(
 		null
 	);
 
-	useEffect(() => {
-		const { projectId } = router.query;
-		const loadMetadata = async () => {
-			try {
-				const currentMetadata: ProjectFormPinata = await storedProject.filter(
-					(project: ProjectFormPinata) => project.id === projectId
-				)[0];
+	const metadataHash: string = router.query.projectId as string;
+	// useEffect(() => {
+	// 	const { projectId } = router.query;
+	// 	const loadMetadata = async () => {
+	// 		try {
+	// 			const currentMetadata: ProjectFormPinata = await storedProject.filter(
+	// 				(project: ProjectFormPinata) => project.id === projectId
+	// 			)[0];
 
-				setMetadata(currentMetadata);
-			} catch (error) {
-				console.error(error);
-			}
-		};
-		loadMetadata();
-	}, [router.query, storedProject]);
+	// 			setMetadata(currentMetadata);
+	// 		} catch (error) {
+	// 			console.error(error);
+	// 		}
+	// 	};
+	// 	loadMetadata();
+	// }, [router.query, storedProject]);
 
 	useEffect(() => {
 		Contract.connectWallet().then((account) => setCurrentAccount(account));
 	}, []);
 
 	useEffect(() => {
-		if (!contractAddress || !metadata?.id) return;
-		Contract.getPropertyProject(contractAddress, metadata.id).then((project) =>
+		if (!contractAddress || !metadataHash) return;
+		Contract.getPropertyProject(contractAddress, metadataHash).then((project) =>
 			setProject(project)
 		);
-	}, [metadata, currentAccount, contractAddress]);
+	}, [currentAccount, contractAddress, metadataHash]);
 
 	const handleDistributeBalance = async () => {
-		if (metadata?.id) {
-			const ok = await Contract.distributeBalance(contractAddress, metadata.id);
+		if (metadataHash) {
+			const ok = await Contract.distributeBalance(
+				contractAddress,
+				metadataHash
+			);
 			setStatusDistribute(ok);
 		}
 	};
 
 	const handleTransferNFT = async () => {
-		if (!metadata?.id || !currentAccount || !sendToAddress) return;
+		if (!metadataHash || !currentAccount || !sendToAddress) return;
 		const ok = await Contract.transferNFT(
 			contractAddress,
-			metadata.id,
+			metadataHash,
 			currentAccount,
 			sendToAddress
 		);
@@ -128,6 +137,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ contractAddress }) => {
 								width={500}
 								height={500}
 								className="object-cover h-full"
+								priority
 								src={metadata.image}
 								alt={metadata.name}
 							/>
@@ -141,18 +151,33 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ contractAddress }) => {
 								</h1>
 							</div>
 						</div>
+						{/* Description */}
+						<div className="my-2">
+							<div className="bg-slate-200 rounded-md p-2">
+								<p className="text-sm text-gray-600 font-bold mb-1">
+									Descripción
+								</p>
+								<p className="text-sm font-normal text-gray-600">
+									{metadata.description}
+								</p>
+							</div>
+						</div>
 
 						{/* Metadata */}
 						<div className="my-2">
 							<ul className="mt-2 bg-slate-200 rounded-md px-2 py-1">
-								<p className="text-sm text-gray-600 font-semibold">Metadata</p>
+								<p className="text-sm text-gray-600 font-bold">Metadata</p>
 								<div className="flex flex-wrap wrap">
-									{metadata.metadata &&
-										Object.entries(metadata.metadata).map(([key, value]) => (
-											<li key={key} className="mr-2 w-auto ">
+									{metadata.attributes &&
+										metadata.attributes.map((attribute) => (
+											<li key={attribute.trait_type} className="mr-2 w-auto ">
 												<p className="text-sm font-semibold text-gray-600">
-													<strong>{key}: </strong>
-													<span className="text-sm">{value}</span>
+													<span className="font-semibold">
+														{attribute.trait_type}:{' '}
+													</span>
+													<span className="text-sm font-normal">
+														{attribute.value}
+													</span>
 												</p>
 											</li>
 										))}
@@ -163,7 +188,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ contractAddress }) => {
 						{/* Balance */}
 						<div className="flex flex-row justify-between bg-slate-200 rounded-md my-1 px-2 py-1">
 							<div className="flex-col mr-2">
-								<p className="text-sm text-gray-600 font-semibold">Balance</p>
+								<p className="text-sm text-gray-600 font-bold">Balance</p>
 								<p className="text-lg font-bold">
 									{project &&
 										Contract.parseWeiHexToEthers(
@@ -200,7 +225,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ contractAddress }) => {
 						{/* token address */}
 						<div className="my-2">
 							<div className="bg-slate-200 rounded-md p-2">
-								<p className="text-sm text-gray-600 font-semibold mb-1">
+								<p className="text-sm text-gray-600 font-bold mb-1">
 									Dirección de Contrato
 								</p>
 								<div className="">
@@ -216,12 +241,12 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ contractAddress }) => {
 						</div>
 					</div>
 
-					<div className="md:col-span-2 w-full">
+					{/* <div className="md:col-span-2 w-full">
 						<DistributedBalanceHistoryEvent
 							contractAddress={contractAddress}
-							filterByIpfsHash={metadata.id}
+							filterByIpfsHash={metadataHash}
 						/>
-					</div>
+					</div> */}
 				</div>
 			</div>
 		</Layout>
@@ -229,11 +254,36 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ contractAddress }) => {
 };
 export default ProjectDetail;
 
-export async function getServerSideProps() {
+export async function getServerSideProps({ query }) {
 	const contractAddress = (process.env.MASTER_PROPERTY_TOKEN as string) || '';
+
+	const baseUrl = 'https://ipfs.io/ipfs/';
+	const hash = query.projectId;
+
+	const metadata = await fetch(baseUrl + hash)
+		.then(async (jsonData) => {
+			const data: MarketplaceMetadataFormat = await jsonData.json();
+			return data;
+		})
+		.catch((error) => {
+			console.error('Error fetching metadata:', error);
+			return null;
+		});
+
 	return {
 		props: {
 			contractAddress,
+			metadata,
 		},
 	};
+}
+
+interface MarketplaceMetadataFormat {
+	name: string;
+	description: string;
+	image: string;
+	attributes: {
+		trait_type: string;
+		value: string;
+	}[];
 }

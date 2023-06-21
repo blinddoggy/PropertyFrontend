@@ -1,6 +1,5 @@
 import React from 'react';
 import Image from 'next/image';
-import ProjectCardSlider from './ProjectCardSlider';
 import { useRouter } from 'next/router';
 
 interface ProjectFormPinata {
@@ -10,19 +9,12 @@ interface ProjectFormPinata {
 	metadata: { [key: string]: any };
 }
 
-interface MetadataProps {
-	key: string;
-	value: any;
-}
-
 interface ProjectCardProps {
 	project: ProjectFormPinata;
 }
 
 const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
 	const router = useRouter();
-	const hasMetadata =
-		project.metadata && Object.keys(project.metadata).length > 0;
 
 	return (
 		<div
@@ -37,17 +29,10 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
 					alt={project.name}
 				/>
 			</div>
-			<div className="p-2 my-auto">
-				{hasMetadata ? (
-					<div>
-						<h2 className="text-xl font-semibold mb-2">{project.name}</h2>
-						<ProjectCardSlider metadata={project.metadata as MetadataProps} />
-					</div>
-				) : (
-					<h2 className="text-xl text-center my-auto font-semibold text-ellipsis">
-						{project.name}
-					</h2>
-				)}
+			<div className="p-2 my-auto overflow-hidden">
+				<h2 className="text-xl text-center my-auto font-semibold line-clamp-1">
+					{project.name}
+				</h2>
 			</div>
 		</div>
 	);

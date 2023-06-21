@@ -4,6 +4,8 @@ import Header from '@/components/Header';
 import axios from 'axios';
 import React, { useState, useCallback, useEffect } from 'react';
 
+import fs from 'fs';
+
 import Input from '@/components/Input';
 import Button from '@/components/Button';
 import {
@@ -19,6 +21,7 @@ import {
 } from '@/utils/PropertyMaster/methods';
 import Loading from '@/components/Loading';
 import { useRouter } from 'next/router';
+import Link from 'next/link';
 
 interface NewProjectProps {
 	contractAddress: string;
@@ -30,6 +33,7 @@ const NewProject: React.FC<NewProjectProps> = ({ contractAddress }) => {
 	const [name, setName] = useState('');
 	const [amount, setAmount] = useState('');
 	const [acronym, setAcronym] = useState('');
+	const [description, setDescription] = useState('');
 	const [isLoading, setIsLoading] = useState(false);
 
 	const [selectedFile, setSelectedFile] = useState(null);
@@ -40,33 +44,31 @@ const NewProject: React.FC<NewProjectProps> = ({ contractAddress }) => {
 	const [logProgressSaving, setLogProgressSaving] = useState<string[]>([]);
 
 	const [currentAccount, setCurrentAccount] = useState('');
-	const [newPropertyAddress, setNewPropertyAddress] = useState('');
+	const [newPropertyAddress, setNewPropertyAddress] = useState();
 
 	useEffect(() => {
 		connectWallet().then((account) => setCurrentAccount(account));
 	}, []);
 
-	useEffect(() => {
-		// const contractEventName = 'eventName';
+	// useEffect(() => {
+	// 	const eventHandler = (event: any) => {
+	// 		router.replace('/projects');
+	// 	};
 
-		const eventHandler = (event: any) => {
-			router.replace('/projects');
-		};
+	// 	subscribeToContractEvent(
+	// 		contractAddress,
+	// 		ContractEventNames.NewPropertyCreated,
+	// 		eventHandler
+	// 	);
 
-		subscribeToContractEvent(
-			contractAddress,
-			ContractEventNames.NewPropertyCreated,
-			eventHandler
-		);
-
-		return () => {
-			unsubscribeToContractEvent(
-				contractAddress,
-				ContractEventNames.NewPropertyCreated,
-				eventHandler
-			);
-		};
-	}, [contractAddress, router]);
+	// 	return () => {
+	// 		unsubscribeToContractEvent(
+	// 			contractAddress,
+	// 			ContractEventNames.NewPropertyCreated,
+	// 			eventHandler
+	// 		);
+	// 	};
+	// }, [contractAddress, router]);
 
 	interface KeyValues {
 		name: string;
@@ -95,22 +97,9 @@ const NewProject: React.FC<NewProjectProps> = ({ contractAddress }) => {
 	};
 
 	const onSubmit = useCallback(async () => {
-		const validateEmptyInputs = () => {
-			if (!selectedFile || !name || !acronym || !amount) {
-				throw 'Todos los campos son obligatorios.';
-			}
-		};
-
-		try {
-			validateEmptyInputs();
-		} catch (error) {
-			console.error(error);
-			return;
-		}
-
 		const generatePinataMetadata = () => {
-			const keyvalues: { [key: string]: string } = {};
-
+			const keyvalues = {};
+			keyvalues['description'] = description;
 			metadataInputs.forEach((input) => {
 				keyvalues[input.name] = input.value;
 			});
@@ -123,85 +112,110 @@ const NewProject: React.FC<NewProjectProps> = ({ contractAddress }) => {
 			return jsonStructure;
 		};
 
-		const pinFileToIPFS = () => {
-			return fetch('../api/token')
-				.then((getTokenResponse) => {
-					setLogProgressSaving((prevState) => [
-						...prevState,
-						'Token obtenido exitosamente.',
-					]);
-					if (getTokenResponse.ok) {
-						return getTokenResponse.json();
+		const addLogProgressSaving = (newLog) => {
+			setLogProgressSaving((prevState) => [...prevState, newLog]);
+		};
+
+		const getApiToken = async () => {
+			const getTokenResponse = await axios.get('../api/token');
+			if (getTokenResponse.status === 200) {
+				const { JWT } = getTokenResponse.data;
+				return JWT;
+			}
+			throw new Error('Failed to get token');
+		};
+
+		const getMetadataJson = async (hash: string) => {
+			const jsonMetadata = await axios.get(`../api/metadata/${hash}`);
+			if (jsonMetadata.status === 200) {
+				return JSON.stringify(jsonMetadata.data);
+			}
+			throw new Error('Failed to get token');
+		};
+
+		const pinFileToIPFS = async (JWT, formData) => {
+			try {
+				const res = await axios.post(
+					'https://api.pinata.cloud/pinning/pinFileToIPFS',
+					formData,
+					{
+						headers: {
+							'Content-Type': 'multipart/form-data',
+							Authorization: JWT,
+						},
 					}
-					throw new Error('Failed to get token');
-				})
-				.then((data) => {
-					const { JWT } = data;
-					setLogProgressSaving((prevState) => [
-						...prevState,
-						'Subiendo archivo a IPFS...',
-					]);
-					const formData = new FormData();
-					formData.append('file', selectedFile!);
-					formData.append('pinataMetadata', generatePinataMetadata());
-					formData.append('pinataOptions', JSON.stringify({ cidVersion: 0 }));
-					return axios.post(
-						'https://api.pinata.cloud/pinning/pinFileToIPFS',
-						formData,
-						{
-							headers: {
-								'Content-Type': 'multipart/form-data',
-								Authorization: JWT,
-							},
-						}
-					);
-				})
-				.then((res) => {
-					const { IpfsHash } = res.data;
-					setLogProgressSaving((prevState) => [
-						...prevState,
-						'Archivo subido a IPFS correctamente.',
-					]);
-					return IpfsHash;
-				})
-				.catch((error) => {
-					console.log(error);
-				});
+				);
+				const { IpfsHash } = res.data;
+
+				return IpfsHash;
+			} catch (error) {
+				console.error(error);
+			}
+		};
+
+		const validateEmptyInputs = () => {
+			if (!selectedFile || !name || !acronym || !amount) {
+				throw 'Todos los campos son obligatorios.';
+			}
 		};
 
 		try {
-			setIsLoading(true);
+			validateEmptyInputs();
 
-			pinFileToIPFS()
-				.then((hash) => {
-					setPinataHash(hash);
-					setLogProgressSaving((prevState) => [
-						...prevState,
-						'Iniciando creación del nuevo Property Token.',
-					]);
-					return createNewProperty(
-						contractAddress,
-						name,
-						acronym,
-						hash,
-						amount,
-						`https://ipfs.io/ipfs/${hash}`
-					);
-				})
-				.then((address) => {
-					setLogProgressSaving((prevState) => [
-						...prevState,
-						'Propiedad creada exitosamente, espera la validación de nodos.',
-					]);
-					setNewPropertyAddress(address);
-					// router.replace('/projects');
-				});
+			const JWT = await getApiToken();
+			addLogProgressSaving('Token obtenido exitosamente.');
+
+			const formData = new FormData();
+			formData.append('file', selectedFile!);
+			formData.append('pinataMetadata', generatePinataMetadata());
+			formData.append('pinataOptions', JSON.stringify({ cidVersion: 0 }));
+
+			addLogProgressSaving('Cargando imagen a IPFS...');
+			const hash = await pinFileToIPFS(JWT, formData);
+			addLogProgressSaving('Imagen cargada a IPFS correctamente.');
+			setPinataHash(hash);
+
+			addLogProgressSaving('Creando metadata del NFT.');
+			const jsonMetadata = await getMetadataJson(hash);
+
+			const blob = new Blob([jsonMetadata], { type: 'application/json' });
+			const jsonFile = new File([blob], `${hash}.json`);
+			const jsonFormData = new FormData();
+			jsonFormData.append('file', jsonFile);
+
+			addLogProgressSaving('Cargando metadata a IPFS...');
+			const jsonHash = await pinFileToIPFS(JWT, jsonFormData);
+			addLogProgressSaving('Metadata cargada a IPFS correctamente.');
+
+			addLogProgressSaving('Iniciando creación del nuevo Property Token.');
+			const address = await createNewProperty(
+				contractAddress,
+				name,
+				acronym,
+				jsonHash,
+				amount,
+				`https://ipfs.io/ipfs/${jsonHash}`
+			);
+
+			addLogProgressSaving('Property Token creado exitosamente.');
+			addLogProgressSaving('Espera la validación de nodos.');
+			console.log(address);
+			setNewPropertyAddress(address);
+			// router.replace('/projects');
 		} catch (error) {
-			console.log(error);
+			console.error(error);
 		} finally {
 			setIsLoading(false);
 		}
-	}, [selectedFile, name, acronym, amount, metadataInputs, contractAddress]);
+	}, [
+		selectedFile,
+		name,
+		description,
+		acronym,
+		amount,
+		metadataInputs,
+		contractAddress,
+	]);
 
 	const bodyContent = (
 		<div className="flex flex-col gap-2">
@@ -211,6 +225,14 @@ const NewProject: React.FC<NewProjectProps> = ({ contractAddress }) => {
 				disabled={isLoading}
 				onChange={(e) => {
 					setName(e.target.value);
+				}}
+			/>
+			<Input
+				placeholder="Descripción"
+				value={description}
+				disabled={isLoading}
+				onChange={(e) => {
+					setDescription(e.target.value);
 				}}
 			/>
 			<Input
@@ -255,6 +277,15 @@ const NewProject: React.FC<NewProjectProps> = ({ contractAddress }) => {
 								{log}
 							</p>
 						))}
+						{newPropertyAddress && (
+							<Link
+								target="_blank"
+								href={`https://bscscan.com/address/${contractAddress}`}>
+								<span className="text-slate-400 hover:underline">
+									Click para ir a Bscscan.
+								</span>
+							</Link>
+						)}
 					</div>
 				</div>
 			</Layout>
